@@ -161,7 +161,7 @@ class MainActivity extends Activity implements SurfaceHolder.Callback {
         sv.setOnTouchListener(new SurfaceView.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                if (/*!swithMode.isChecked() &&*/ event.getAction() == MotionEvent.ACTION_DOWN) {
+                if (/*!swithMode.isChecked() &&*/ event.getAction() == MotionEvent.ACTION_UP) {
                     x = (int) event.getX();
                     y = (int) event.getY();
                     Toast.makeText(getApplicationContext(), "x: " + x + "; y: " + y,
@@ -207,50 +207,60 @@ class MainActivity extends Activity implements SurfaceHolder.Callback {
         mCall = new Camera.PictureCallback() {
             @Override
             public void onPictureTaken(byte[] data, Camera camera) {
+                String source = "pic";
                 // decode the data obtained by the camera into a Bitmap
                 if (data != null) {
                     bmp = decodeBitmap(data);
-                }
-                // set the iv_image
-                if (bmp != null) {
-                    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-                    bmp.compress(Bitmap.CompressFormat.JPEG, 5, bytes);
-                    Bitmap resizebitmap;
 
-                    if (x == -1) {
-                        resizebitmap = Bitmap.createScaledBitmap(bmp,
-                                bmp.getWidth() / bmp.getWidth(), bmp.getHeight() / bmp.getHeight(), false);
-                    } else {
-                        try {
+                    // set the iv_image
+                    if (bmp != null) {
+                        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                        bmp.compress(Bitmap.CompressFormat.JPEG, 5, bytes);
+                        Bitmap resizebitmap;
 
-                            resizebitmap = Bitmap.createBitmap(bmp, (sv.getHeight() - y) * bmp.getHeight() / sv.getHeight() - 19
-                                    , x * bmp.getWidth() / sv.getWidth() - 19, 20, 20);
+                        if (x == -1) {
+                            resizebitmap = Bitmap.createScaledBitmap(bmp,
+                                    bmp.getWidth() / bmp.getWidth(), bmp.getHeight() / bmp.getHeight(), false);
+                        } else {
+                            try {
+                                source = "tap";
+                                int w_x = y * bmp.getWidth() / sv.getHeight() - 19;
+                                int h_y = (sv.getWidth() - x) * bmp.getHeight() / sv.getWidth() - 19;
+                                resizebitmap = Bitmap.createBitmap(bmp, w_x
+                                        , h_y, 20, 20);
+//                                resizebitmap = Bitmap.createBitmap(bmp, y * bmp.getWidth() / sv.getHeight() - 19
+//                                        , (sv.getHeight() - x) * bmp.getHeight() / sv.getWidth() - 19, 20, 20);
+                            } catch (Exception e) {
+                                int w_x = y * bmp.getWidth() / sv.getHeight() - 10;
+                                int h_y = (sv.getWidth() - x) * bmp.getHeight() / sv.getWidth() - 10;
+                                resizebitmap = Bitmap.createBitmap(bmp, w_x
+                                        , h_y, 10, 10);
+                            }
                         }
-                        catch (Exception e){
-                            int w_x = (sv.getHeight() - y) * bmp.getHeight() / sv.getHeight() - 10;
-                            int h_y = x * bmp.getWidth() / sv.getWidth() - 10;
-                            resizebitmap = Bitmap.createBitmap(bmp, h_y
-                                    ,w_x , 10, 10);
+
+                        resizebitmap = Bitmap.createScaledBitmap(resizebitmap,
+                                1, 1, false);
+
+                        //iv_image.setImageBitmap(rotateImage(resizebitmap, 90));
+                        iv_image.setImageBitmap(resizebitmap);
+
+                        int color = getAverageColor(resizebitmap);
+                        float[] colorArray = getAverageColorArray(resizebitmap);
+                        Log.i("Color Int", color + "");
+                        // int color =
+                        // resizebitmap.getPixel(resizebitmap.getWidth()/2,resizebitmap.getHeight()/2);
+
+                        String strColor = String.format("#%06X", 0xFFFFFF & color);
+                        Hex.setText("hex color: " + strColor + "(" + source + ")");
+                        //String colorname = sColorNameMap.get(strColor);
+                        String colorname = ClassifyColor(colorArray);
+                        if (colorName != null) {
+                            colorName.setText("color name: " + colorname);
                         }
+
+                        Log.i("Pixel Value",
+                                "Top Left pixel: " + Integer.toHexString(color));
                     }
-                    iv_image.setImageBitmap(rotateImage(resizebitmap, 90));
-
-                    int color = getAverageColor(resizebitmap);
-                    float[] colorArray = getAverageColorArray(resizebitmap);
-                    Log.i("Color Int", color + "");
-                    // int color =
-                    // resizebitmap.getPixel(resizebitmap.getWidth()/2,resizebitmap.getHeight()/2);
-
-                    String strColor = String.format("#%06X", 0xFFFFFF & color);
-                    Hex.setText("hex color: " + strColor);
-                    //String colorname = sColorNameMap.get(strColor);
-                    String colorname = ClassifyColor(colorArray);
-                    if (colorName != null) {
-                        colorName.setText("color name: " + colorname);
-                    }
-
-                    Log.i("Pixel Value",
-                            "Top Left pixel: " + Integer.toHexString(color));
                 }
                 camera.startPreview();
                 safeToTakePicture = true;
